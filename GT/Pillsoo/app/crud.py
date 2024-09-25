@@ -6,7 +6,8 @@ def get_functionality_items(db: Session):
                     Supplement.pill_name,
                     Supplement.functionality,
                     Supplement.preprocessed_text,
-                    Supplement.dose_guide).all()
+                    Supplement.dose_guide,
+                    Supplement.image_url).all()
 
 def get_supplements_by_age(db: Session, age: int, limit: int = 3):
     # 나이에 맞는 AGE_GROUPS 구하기

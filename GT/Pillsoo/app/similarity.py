@@ -62,5 +62,3 @@ def calculate_similarity(input_text: str, db_items: List[Tuple[int, str, str, st
 if __name__ == "__main__":
     if not ray.is_initialized():
         ray.init(num_cpus=16, num_gpus=1, ignore_reinit_error=True)
-
-

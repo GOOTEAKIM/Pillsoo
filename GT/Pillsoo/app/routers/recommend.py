@@ -32,7 +32,7 @@ def recommend_supplements(client_text: str = Query(..., description="Client inpu
     if mongo_result:
         # MongoDB에 결과가 있으면 Redis에 저장하고 반환
         if r:
-            r.set(cache_key, json.dumps(mongo_result['result']), ex=60000)
+            r.set(cache_key, json.dumps(mongo_result['result']), ex=600)
         return mongo_result['result']
     
     # 3. MySQL 데이터베이스에서 아이템 가져오기
@@ -47,57 +47,18 @@ def recommend_supplements(client_text: str = Query(..., description="Client inpu
             "supplementSeq": item[0],       # supplementSeq
             "pill_name": item[1],           # pill_name
             "functionality": item[2],       # functionality
-            "dose_guide": item[4]           # dose_guide
+            "dose_guide": item[4],          # dose_guide
+            "image_url" : item[5]           # image_url
         }
         for item in top_matches
     ]
 
     # 4. MongoDB와 Redis에 결과 저장
     if r:
-        r.set(cache_key, json.dumps(result), ex=60000)  # Redis에 저장
+        r.set(cache_key, json.dumps(result), ex=600)  # Redis에 저장
     mongo_collection.insert_one({"client_text": client_text, "result": result})  # MongoDB에 저장
     
     return result
-
-'''
-# 9/24
-@router.get("/api/v1/recommend/survey")
-def recommend_supplements(client_text: str = Query(..., description="Client input text"), db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
-    # 캐시 키 생성
-    cache_key = generate_cache_key(client_text)
-
-    # Redis에서 캐시된 결과 가져오기
-    cached_result = None
-    if r:
-        cached_result = r.get(cache_key)
-    
-    if cached_result:
-        # 캐시된 결과가 있을 경우 반환
-        return json.loads(cached_result)
-    
-    # 데이터베이스에서 아이템 가져오기
-    db_items = get_functionality_items(db)  # 여기서 PREPROCESSED_TEXT를 포함한 데이터 가져오기
-
-    # 단어별 유사도 계산 (병렬 처리 적용)
-    top_matches = calculate_similarity(client_text, db_items)
-
-    # 결과 형식 변환
-    result = [
-        {
-            "supplementSeq": item[0],       # supplementSeq
-            "pill_name": item[1],           # pill_name
-            "functionality": item[2],       # functionality
-            "dose_guide": item[4]           # dose_guide
-        }
-        for item in top_matches
-    ]
-
-    # 결과를 Redis에 캐시 (1000분 동안) - 60000초
-    if r:
-        r.set(cache_key, json.dumps(result), ex=60000)
-    
-    return result
-'''
 
 @router.get("/api/v1/recommend")
 def recommend_supplements_by_age(age: int, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
