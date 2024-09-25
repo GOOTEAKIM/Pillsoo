@@ -2,6 +2,7 @@
 
 from pymongo import MongoClient
 import redis
+import json
 
 # Redis 클라이언트 설정
 try:
@@ -15,6 +16,7 @@ mongo_client = MongoClient("mongodb://localhost:27017/")
 mongo_db = mongo_client["sos_db"]  # 데이터베이스 이름
 mongo_collection = mongo_db["recommended"]  # 컬렉션 이름
 
+'''
 def transfer_redis_to_mongodb():
     # Redis에서 모든 키 가져오기
     keys = r.keys()
@@ -26,10 +28,36 @@ def transfer_redis_to_mongodb():
         value = r.get(key)
         if value:
             # MongoDB에 저장
-            mongo_collection.insert_one({"key": key.decode(), "value": value.decode()})
+            mongo_collection.insert_one({"client_text": key.decode(), "result": value.decode()})
             # Redis에서 해당 키 삭제
             r.delete(key)
             print(f"Key {key.decode()}가 MongoDB로 이동되고 Redis에서 삭제되었습니다.")
+    print(f"총 {len(keys)}개의 키가 MongoDB로 이동되었습니다.")
+
+if __name__ == "__main__":
+    transfer_redis_to_mongodb()
+'''
+
+def transfer_redis_to_mongodb():
+    # Redis에서 모든 키 가져오기
+    keys = r.keys()
+    if not keys:
+        print("Redis에 저장된 데이터가 없습니다.")
+        return
+    
+    for key in keys:
+        value = r.get(key)
+        if value:
+            # JSON 문자열을 파싱하여 딕셔너리로 변환
+            try:
+                result_data = json.loads(value.decode())
+                # MongoDB에 저장
+                mongo_collection.insert_one({"client_text": key.decode(), "result": result_data})
+                # Redis에서 해당 키 삭제
+                r.delete(key)
+                print(f"Key {key.decode()}가 MongoDB로 이동되고 Redis에서 삭제되었습니다.")
+            except json.JSONDecodeError:
+                print(f"Key {key.decode()}의 데이터가 JSON 형식이 아닙니다.")
     print(f"총 {len(keys)}개의 키가 MongoDB로 이동되었습니다.")
 
 if __name__ == "__main__":
